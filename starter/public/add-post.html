@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Post - Workshop 04 MongoDB</title>
+    <link rel="stylesheet" href="/styles/style.css">
+    <style>
+        form label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        form input,
+        form textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font: inherit;
+            box-sizing: border-box;
+        }
+        form textarea {
+            min-height: 120px;
+        }
+        form .btn {
+            margin-top: 20px;
+            border: none;
+            cursor: pointer;
+        }
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .message.success {
+            display: block;
+            background: #e8f8ef;
+            color: #1e7e46;
+        }
+        .message.error {
+            display: block;
+            background: #fdecea;
+            color: #c0392b;
+        }
+        .post-item {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+        .post-item small {
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+        <a href="/add-post">Add Post</a>
+        <a href="/api/posts">API Posts</a>
+    </nav>
+
+    <div class="container">
+        <h1>✍️ Add a New Post</h1>
+
+        <div class="card">
+            <form id="post-form">
+                <label for="title">Title (5-100 characters)</label>
+                <input type="text" id="title" name="title" required minlength="5" maxlength="100">
+
+                <label for="description">Description (at least 20 characters)</label>
+                <textarea id="description" name="description" required minlength="20"></textarea>
+
+                <label for="author">Author</label>
+                <input type="text" id="author" name="author" placeholder="Anonymous">
+
+                <label for="tags">Tags (comma separated)</label>
+                <input type="text" id="tags" name="tags" placeholder="mongodb, express">
+
+                <button type="submit" class="btn">Save Post</button>
+            </form>
+            <div id="message" class="message"></div>
+        </div>
+
+        <div class="card">
+            <h3>📚 Latest Posts</h3>
+            <div id="post-list">Loading...</div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Workshop 04 - MongoDB | ©Jari Kovis Laurea FullStack 2026</p>
+    </footer>
+
+    <script>
+        const form = document.querySelector('#post-form');
+        const message = document.querySelector('#message');
+        const postList = document.querySelector('#post-list');
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = `message ${type}`;
+        }
+
+        async function loadPosts() {
+            try {
+                const response = await fetch('/api/posts?limit=5');
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error);
+                }
+                if (data.posts.length === 0) {
+                    postList.textContent = 'No posts yet.';
+                    return;
+                }
+                postList.innerHTML = '';
+                for (const post of data.posts) {
+                    const item = document.createElement('div');
+                    item.className = 'post-item';
+                    const title = document.createElement('strong');
+                    title.textContent = post.title;
+                    const meta = document.createElement('small');
+                    meta.textContent = ` - ${post.author}, ${new Date(post.createdAt).toLocaleString()}`;
+                    const text = document.createElement('p');
+                    text.textContent = post.description;
+                    item.append(title, meta, text);
+                    postList.append(item);
+                }
+            } catch (err) {
+                postList.textContent = `Could not load posts: ${err.message}`;
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            // Leave author out when empty so the schema default is used
+            if (!data.author.trim()) {
+                delete data.author;
+            }
+
+            try {
+                const response = await fetch('/api/posts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('Post created successfully!', 'success');
+                    form.reset();
+                    loadPosts();
+                } else {
+                    const errors = Array.isArray(result.error) ? result.error.join(' ') : result.error;
+                    showMessage(`Error: ${errors}`, 'error');
+                }
+            } catch (err) {
+                showMessage(`Network error: ${err.message}`, 'error');
+            }
+        });
+
+        loadPosts();
+    </script>
+</body>
+</html>
