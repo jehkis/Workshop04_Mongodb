@@ -74,4 +74,4 @@ A browser form for creating posts is available at `http://localhost:3000/add-pos
 - **Optional 9:** `Comment` model referencing `Post`, loaded with `populate()`
 - **Optional 10:** pagination on `GET /api/posts`
 
-MongoDB Introduction learning path: completed – see `../todistus-introduction-to-mongodb.jpg`.
+MongoDB Introduction learning path: completed – see `../todistus-introduction-to-mongodb.pdf` (screenshot: `../todistus-introduction-to-mongodb.jpg`).
